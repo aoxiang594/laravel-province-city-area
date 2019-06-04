@@ -1,0 +1,17 @@
+{
+  "name": "aoxiang/province-city-area",
+  "description": "China Province City Area From JD.COM",
+  "type": "l",
+  "require": {
+    "php": "^7.0",
+    "guzzlehttp/guzzle": "~6.0"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Aoxiang",
+      "email": "mail@aoxiang.me"
+    }
+  ],
+  "minimum-stability": "dev"
+}
