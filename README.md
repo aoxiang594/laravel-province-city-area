@@ -20,3 +20,39 @@
 ```
 php artisan vendor:publish --provider="Aoxiang\Pca\ProvinceCityAreaServiceProvider" --tag="migrations"
 ```
+
+#### 执行数据库迁移
+```
+php artisan migrate
+```
+
+#### 从京东获取新的省市县数据
+```
+php artisan pca:refreshData
+```
+
+####  Demo
+
+```
+<?php
+
+namespace App\Http\Controllers;
+
+use Aoxiang\Pca\ProvinceCityArea;
+use Illuminate\Routing\Controller as BaseController;
+
+class Controller  extends BaseController{
+    public function getProvinceList()
+    {
+        return response()->json(ProvinceCityArea::getProvinceList());
+    }
+    
+    public function getCityList()
+    {
+        ProvinceCityArea::getCityList(1);
+    }
+}
+
+```
+
+
