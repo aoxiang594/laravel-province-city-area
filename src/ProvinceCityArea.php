@@ -57,4 +57,26 @@ class ProvinceCityArea
     {
         return PCA::where('id', $id)->first();
     }
+
+
+    static public function getName($provinceId = 0, $cityId = 0, $areaId = 0)
+    {
+        $text = [];
+        if (!empty($provinceId)) {
+            $province = self::getItem($provinceId);
+            $text[]   = $province->name;
+        }
+
+        if (!empty($cityId)) {
+            $city   = self::getItem($cityId);
+            $text[] = $city->name;
+        }
+
+        if (!empty($areaId)) {
+            $area   = self::getItem($areaId);
+            $text[] = $area->name;
+        }
+
+        return implode('', $text);
+    }
 }

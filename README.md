@@ -33,7 +33,7 @@ php artisan pca:refreshData
 
 ####  Demo
 
-```
+```php
 <?php
 
 namespace App\Http\Controllers;
@@ -50,6 +50,12 @@ class Controller  extends BaseController{
     public function getCityList()
     {
         ProvinceCityArea::getCityList(1);
+    }
+    
+    public function test()
+    {
+        echo ProvinceCityArea::getName(21, 1827, 40847);
+        //echo "江西南昌市红谷滩新区";
     }
 }
 
