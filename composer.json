@@ -15,7 +15,7 @@
   ],
   "autoload": {
     "psr-4": {
-      "Aoxiang\\Pca\\": "aoxiang/province-city-area/src/"
+      "Aoxiang\\Pca\\": "src/"
     }
   },
   "minimum-stability": "dev"
