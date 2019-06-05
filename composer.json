@@ -1,10 +1,20 @@
 {
   "name": "aoxiang/province-city-area",
   "description": "China Province City Area From JD.COM",
-  "type": "l",
+  "type": "library",
   "require": {
     "php": "^7.0",
     "guzzlehttp/guzzle": "~6.0"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Aoxiang\\Pca\\ProvinceCityAreaServiceProvider"
+      ],
+      "alias": {
+        "LaravelPayment": "Aoxiang\\Pca\\Facades\\ProvinceCityAreaFacades"
+      }
+    }
   },
   "license": "MIT",
   "authors": [

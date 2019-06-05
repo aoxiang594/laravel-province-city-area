@@ -12,7 +12,7 @@
 
 
 
-#### 添加provider
+#### 添加provider（laravel 版本 < 5.5）
 将`Aoxiang\Pca\ProvinceCityAreaServiceProvider::class`复制到`config.php`内`providers`数组内
 
 #### 生成数据库迁移文件：

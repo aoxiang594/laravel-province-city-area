@@ -20,6 +20,6 @@ class ClearData extends Command
 
     public function handle()
     {
-        PCAModel::where('id', '>', 0)->delete();
+        PCAModel::query()->truncate();
     }
 }
