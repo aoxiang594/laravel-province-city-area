@@ -3,6 +3,7 @@
 namespace Aoxiang\Pca;
 
 use Illuminate\Support\ServiceProvider;
+use Psy\Command\Command;
 
 class ProvinceCityAreaServiceProvider extends ServiceProvider
 {
@@ -13,7 +14,7 @@ class ProvinceCityAreaServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->singleton('provincecityarea',function(){
+        $this->app->singleton('provincecityarea', function () {
             return $this->app->make('Aoxiang\Pca\ProvinceCityArea');
         });
 
@@ -32,7 +33,15 @@ class ProvinceCityAreaServiceProvider extends ServiceProvider
 //        ]);
         // 发布数据库迁移文件到 laravel 的config 下
         $this->publishes([
-            __DIR__.'/database/migrations/2019_06_04_222005_create_province_city_area_table.php' => database_path('migrations/2019_06_04_222005_create_province_city_area_table.php')
+            __DIR__ . '/database/migrations/2019_06_04_222005_create_province_city_area_table.php' => database_path('migrations/2019_06_04_222005_create_province_city_area_table.php'),
         ], 'migrations');
+
+        //生成命令
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                Commands\RefreshData::class,
+                Commands\ClearData::class,
+            ]);
+        }
     }
 }

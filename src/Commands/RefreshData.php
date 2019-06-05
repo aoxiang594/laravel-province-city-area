@@ -2,21 +2,24 @@
 /**
  * Created by PhpStorm.
  * User: aoxiang
- * Date: 2019-06-04
- * Time: 22:03
+ * Date: 2019-06-05
+ * Time: 11:35
  */
 
-namespace Aoxiang\Pca;
+namespace Aoxiang\Pca\Commands;
 
+use Illuminate\Console\Command;
 use Aoxiang\Pca\Models\ProvinceCityArea as PCAModel;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\DB;
 
-class RefreshData
+class RefreshData extends Command
 {
-    static $client = null, $provinceList = null, $url = '';
-    static $result = [];
-    static $headers = ["accept"                    => "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
+    protected $signature = 'pca:refreshData';
+    protected $description = '从京东获取最新的省市县数据';
+    public $client = null, $provinceList = null, $url = '';
+    public $result = [];
+    public $headers = ["accept"                    => "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
                        "accept-encoding"           => "gzip, deflate, br",
                        "accept-language"           => "zh-CN,zh;q=0.9,en;q=0.8",
                        "cache-control"             => "max-age=0",
@@ -24,11 +27,17 @@ class RefreshData
                        "upgrade-insecure-requests" => "1",
                        "user-agent"                => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
     ];
+    public $count = 0;
 
-    static function run()
+    public function handle()
     {
+        if (PCAModel::count() > 0) {
+            $this->error("您已经获取过最新的数据，如果再次执行，有可能会出现id有变化，导致您之前的数据不准确");
+            $this->error("如果确认要执行，请运行php artisan pca:clearData 命令，这会将之前省市县数据清空，然后再执行php artisan pcm:refreshData获取最新的数据");
+            exit;
+        }
 
-        self::$provinceList = [
+        $this->provinceList = [
             '1'     => '北京',
             '2'     => '上海',
             '3'     => '天津',
@@ -65,26 +74,28 @@ class RefreshData
             '52993' => '港澳',
 //            '53283' => '海外',
         ];
+        $this->count        += count($this->provinceList);
 
-        foreach (self::$provinceList as $id => $province) {
-            self::$result[$id] = [
+        foreach ($this->provinceList as $id => $province) {
+            $this->result[$id] = [
                 'id'        => $id,
                 'name'      => $province,
                 'city_list' => [],
             ];
             try {
-                $city = self::getCity($id);
-
-                $cityList = [];
+                $city        = $this->getCity($id);
+                $this->count += count($city);
+                $cityList    = [];
                 if ($city !== false) {
                     foreach ($city as $item) {
-                        self::info("获取数据成功:" . $item['name']);
+                        $this->line("获取数据成功:" . $province . $item['name']);
                         $cityList[$item['id']] = [
                             'id'        => $item['id'],
                             'name'      => $item['name'],
                             'area_list' => [],
                         ];
-                        $area                  = self::getArea($item['id']);
+                        $area                  = $this->getArea($item['id']);
+                        $this->count           += count($area);
                         if ($area !== false) {
                             foreach ($area as &$a) {
                                 unset($a['areaCode']);
@@ -93,67 +104,73 @@ class RefreshData
                         }
                     }
                 }
-                self::$result[$id]['city_list'] = array_values($cityList);
+                $this->result[$id]['city_list'] = array_values($cityList);
             } catch (\Exception $e) {
 
             }
         }
-        self::$result = array_values(self::$result);
+        $this->result = array_values($this->result);
 
-        static::insertToDb();
 
-        //file_put_contents(config('dataFileName'), json_encode(self::$result));
+        $this->insertToDb();
     }
 
-    static function insertToDb()
+    public function insertToDb()
     {
         DB::beginTransaction();
+
         try {
-            foreach (self::$result as $item) {
+            $this->line("正在插入数据库");
+            $bar = $this->output->createProgressBar($this->count);
+            foreach ($this->result as $item) {
                 $province = PCAModel::create($item);
+                $bar->advance();
                 if (!empty($item['city_list'])) {
                     foreach ($item['city_list'] as $value) {
                         $value['parent_id'] = $province->id;
                         $city               = PCAModel::create($value);
+                        $bar->advance();
                         if (!empty($value['area_list'])) {
                             foreach ($value['area_list'] as $v) {
                                 $v['parent_id'] = $city->id;
                                 $area           = PCAModel::create($v);
-
+                                $bar->advance();
                             }
                         }
                     }
                 }
             }
+            $bar->finish();
+            $this->info("数据已更新完成");
         } catch (\Exception $e) {
             DB::rollBack();
-            self::error("更新省市县数据失败.");
-            self::error($e->getMessage());
+            $this->error("更新省市县数据失败.");
+            $this->error($e->getMessage());
         }
 
         DB::commit();
     }
 
-    static function getCity($id)
+    public function getCity($id)
     {
-        return self::parseData($id);
+        return $this->parseData($id);
     }
 
-    static function getArea($id)
+    public function getArea($id)
     {
-        return self::parseData($id);
+        return $this->parseData($id);
     }
 
-    static function parseData($id)
+    public function parseData($id)
     {
-        $data = self::getData($id);
+        $data = $this->getData($id);
         if ($data === false) {
-            self::info("获取数据失败.");
+            $this->error("获取数据失败.");
         } else {
-            $data = self::parseJson($data);
+            $data = $this->parseJson($data);
             if ($data === false) {
-                self::info(self::$url);
-                self::info("解析数据失败.");
+                $this->error($this->url);
+                $this->error("解析数据失败.");
             } else {
                 return $data;
             }
@@ -161,11 +178,11 @@ class RefreshData
         }
     }
 
-    static function getData($id)
+    public function getData($id)
     {
-        self::$url    = 'https://fts.jd.com/area/get?fid=' . $id . '&callback=getAreaList_callbackF&sceneval=2';
-        self::$client = is_null(self::$client) ? new Client() : self::$client;
-        $response     = self::$client->request('get', self::$url, self::$headers);
+        $this->url    = 'https://fts.jd.com/area/get?fid=' . $id . '&callback=getAreaList_callbackF&sceneval=2';
+        $this->client = is_null($this->client) ? new Client() : $this->client;
+        $response     = $this->client->request('get', $this->url, $this->headers);
         if ($response->getStatusCode() == 200) {
             return $response->getBody()->getContents();
         } else {
@@ -173,7 +190,7 @@ class RefreshData
         }
     }
 
-    static function parseJson($data = '')
+    public function parseJson($data = '')
     {
         $data = preg_replace('/^getAreaList_callback(\w)\(/', '', $data);
         $data = preg_replace('/\)$/', '', $data);
@@ -188,9 +205,4 @@ class RefreshData
 
     }
 
-    static function info($str)
-    {
-
-        echo "[" . date('Y-m-d H:i:s') . "]" . $str . "\n";
-    }
 }
