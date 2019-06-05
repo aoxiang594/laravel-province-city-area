@@ -10,7 +10,8 @@
 > 内部自带京东省市县数据爬虫，用户可以自行运行爬取最新的省市县数据
 
 
-
+ 
+ 
 
 #### 添加provider
 将`Aoxiang\Pca\ProvinceCityAreaServiceProvider::class`复制到`config.php`内`providers`数组内
@@ -26,9 +27,26 @@ php artisan vendor:publish --provider="Aoxiang\Pca\ProvinceCityAreaServiceProvid
 php artisan migrate
 ```
 
-#### 从京东获取新的省市县数据
+#### 最后一步:从京东获取新的省市县数据
 ```
 php artisan pca:refreshData
+```
+
+```
+获取数据成功:新疆阿勒泰地区
+获取数据成功:新疆五家渠市
+获取数据成功:新疆阿拉尔市
+获取数据成功:新疆图木舒克市
+获取数据成功:新疆铁门关市
+获取数据成功:新疆昆玉市
+获取数据成功:台湾台湾
+获取数据成功:钓鱼岛钓鱼岛
+获取数据成功:港澳香港特别行政区
+获取数据成功:港澳澳门特别行政区
+正在插入数据库
+ 5252/5662 [▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░]  92%
+
+执行完成就可以用了
 ```
 
 ####  Demo
