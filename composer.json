@@ -13,5 +13,10 @@
       "email": "mail@aoxiang.me"
     }
   ],
+  "autoload": {
+    "psr-4": {
+      "Aoxiang\\Pca\\": "packages/aoxiang/pca/src/"
+    }
+  },
   "minimum-stability": "dev"
 }
