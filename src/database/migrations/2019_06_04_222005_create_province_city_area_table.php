@@ -14,7 +14,7 @@ class CreateProvinceCityAreaTable extends Migration
     public function up()
     {
         Schema::create('province_city_area', function (Blueprint $table) {
-            $table->integerIncrements('id');
+            $table->increments('id');
             $table->string('name')->default('')->comment('省市县名称');
             $table->string('parent_id')->default(0)->comment('父级id');
             $table->timestamps();
