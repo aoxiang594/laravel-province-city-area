@@ -12,7 +12,7 @@
         "Aoxiang\\Pca\\ProvinceCityAreaServiceProvider"
       ],
       "alias": {
-        "LaravelPayment": "Aoxiang\\Pca\\Facades\\ProvinceCityAreaFacades"
+        "ProvinceCityArea": "Aoxiang\\Pca\\Facades\\ProvinceCityAreaFacades"
       }
     }
   },
