@@ -84,7 +84,7 @@ class RefreshData extends Command
         ];
         $this->result       = Cache::get('provinceCityAreaStreet');
         $this->result       = json_decode($this->result, true);
-
+        $this->count        += count($this->provinceList);
         if ($this->argument('disableCache') == 'true' || !is_array($this->result) || empty($this->result)) {
             $this->result = [];
             foreach ($this->provinceList as $id => $province) {
@@ -92,11 +92,11 @@ class RefreshData extends Command
                     'id'        => $id,
                     'name'      => $province,
                     'parent_id' => 0,
+                    'type'      => 'province',
                     'city_list' => [],
                 ];
-                //try {
-                $cityList  = $this->getCity($id);
-                $_cityList = [];
+                $cityList          = $this->getCity($id);
+                $_cityList         = [];
                 if ($cityList !== false) {
                     foreach ($cityList as $city) {
                         $this->line("获取数据成功:" . $province . $city['name']);
@@ -104,6 +104,7 @@ class RefreshData extends Command
                             'id'        => $city['id'],
                             'name'      => $city['name'],
                             'parent_id' => $id,
+                            'type'      => 'city',
                             'area_list' => [],
                         ];
                         $areaList               = $this->getArea($city['id']);
@@ -114,23 +115,29 @@ class RefreshData extends Command
                                 $_areaList[$area['id']] = [
                                     'id'          => $area['id'],
                                     'name'        => $area['name'],
+                                    'type'        => 'area',
                                     'parent_id'   => $city['id'],
                                     'street_list' => [],
                                 ];
                                 $streetList             = $this->getStreet($area['id']);
                                 if ($streetList !== false) {
                                     foreach ($streetList as &$street) {
+                                        $street['type']      = 'street';
                                         $street['parent_id'] = $area['id'];
                                         $this->line("获取数据成功:" . $province . $city['name'] . $area['name'] . $street['name']);
                                         unset($street['areaCode']);
                                     }
+                                    $this->count += count($streetList);
                                 }
                                 $_areaList[$area['id']]['street_list'] = array_values($streetList);
+
                             }
+                            $this->count                         += count($_areaList);
                             $_cityList[$city['id']]['area_list'] = array_values($_areaList);
                         }
                     }
                 }
+                $this->count                    += count($_cityList);
                 $this->result[$id]['city_list'] = array_values($_cityList);
 
 //
@@ -149,10 +156,16 @@ class RefreshData extends Command
     public function insertToDb()
     {
         DB::beginTransaction();
+        $countResult = [
+            'province' => 0,
+            'city'     => 0,
+            'area'     => 0,
+            'street'   => 0,
+        ];
 
         try {
             $this->line("正在插入数据库");
-            $bar = $this->output->createProgressBar(count($this->result));
+            $bar = $this->output->createProgressBar($this->count);
             foreach ($this->result as $province) {
                 $provinceList[] = [
                     'id'        => $province['id'],
@@ -160,20 +173,23 @@ class RefreshData extends Command
                     'parent_id' => $province['parent_id'],
                 ];
                 $cityList       = [];
+
                 foreach ($province['city_list'] as $city) {
+
                     $cityList[] = [
                         'id'        => $city['id'],
                         'name'      => $city['name'],
                         'parent_id' => $city['parent_id'],
                     ];
-                    $areaList = [];
+                    $areaList   = [];
                     foreach ($city['area_list'] as $area) {
-                        $areaList[]   = [
+                        $areaList[] = [
                             'id'        => $area['id'],
                             'name'      => $area['name'],
                             'parent_id' => $area['parent_id'],
                         ];
                         $streetList = [];
+//                        dump($area['street_list']);
                         foreach ($area['street_list'] as $street) {
                             $streetList[] = [
                                 'id'        => $street['id'],
@@ -182,16 +198,25 @@ class RefreshData extends Command
                             ];
                         }
                         DB::table('province_city_area')->insert($streetList);
+                        $bar->advance(count($streetList));
+                        $countResult['street'] += count($streetList);
                     }
                     DB::table('province_city_area')->insert($areaList);
+                    $bar->advance(count($areaList));
+                    $countResult['area'] += count($areaList);
                 }
 
                 DB::table('province_city_area')->insert($cityList);
-                $bar->advance();
+                $bar->advance(count($cityList));
+                $countResult['city'] += count($cityList);
             }
+            $countResult['province'] += count($provinceList);
             DB::table('province_city_area')->insert($provinceList);
+            $bar->advance(count($provinceList));
             $bar->finish();
+            $this->line("");
             $this->info("数据已更新完成");
+            $this->info("共插入:" . $this->count . "条数据，其中省份:" . $countResult['province'] . ",城市:" . $countResult['city'] . ",区县:" . $countResult['area'] . ",乡镇街道:" . $countResult['street']);
         } catch (\Exception $e) {
             DB::rollBack();
             $this->error("更新省市县数据失败.");

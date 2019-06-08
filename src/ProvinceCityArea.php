@@ -81,8 +81,6 @@ class ProvinceCityArea
             $street = self::getItem($streetId);
             $text[] = $street->name;
         }
-        dump($text);
-
         return implode('', $text);
     }
 }
