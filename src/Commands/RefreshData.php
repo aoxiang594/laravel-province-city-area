@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\Cache;
 
 class RefreshData extends Command
 {
-    protected $signature = 'pca:refreshData {disableCache?}';
-    protected $description = '从京东获取最新的省市县数据';
+    protected $signature = 'pca:refreshData {--d|driver=file}';
+    protected $description = '从京东获取最新的省市县数据,--d:jd|file jd-从京东获取最新数据，file-从本地文件获取';
     public $client = null, $provinceList = null, $url = '';
     public $result = [];
     public $headers = ["accept"                    => "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
@@ -32,122 +32,128 @@ class RefreshData extends Command
 
     public function handle()
     {
-//        dump($this->arguments());
-//        $params = $this->argument('disableCache');
-//        if (isset($params)) {
-//            dump();
-//        }
-//        exit;
-        if (PCAModel::count() > 0) {
-            $this->error("您已经获取过最新的数据，如果再次执行，有可能会出现id有变化，导致您之前的数据不准确");
-            $this->error("如果确认要执行，请运行php artisan pca:clearData 命令，这会将之前省市县数据清空，然后再执行php artisan pcm:refreshData获取最新的数据");
-            exit;
-        }
 
-        $this->provinceList = [
-            '1'     => '北京',
-            '2'     => '上海',
-            '3'     => '天津',
-            '4'     => '重庆',
-            '5'     => '河北',
-            '6'     => '山西',
-            '7'     => '河南',
-            '8'     => '辽宁',
-            '9'     => '吉林',
-            '10'    => '黑龙江',
-            '11'    => '内蒙古',
-            '12'    => '江苏',
-            '13'    => '山东',
-            '14'    => '安徽',
-            '15'    => '浙江',
-            '16'    => '福建',
-            '17'    => '湖北',
-            '18'    => '湖南',
-            '19'    => '广东',
-            '20'    => '广西',
-            '21'    => '江西',
-            '22'    => '四川',
-            '23'    => '海南',
-            '24'    => '贵州',
-            '25'    => '云南',
-            '26'    => '西藏',
-            '27'    => '陕西',
-            '28'    => '甘肃',
-            '29'    => '青海',
-            '30'    => '宁夏',
-            '31'    => '新疆',
-            '32'    => '台湾',
-            '84'    => '钓鱼岛',
-            '52993' => '港澳',
+//        if (PCAModel::count() > 0) {
+//            $this->error("您的数据库表(province_city_area)中已经有数据，如果再次执行，有可能会出现id有变化，导致您之前的数据不准确");
+//            $this->error("如果确认要执行，请运行php artisan pca:clearData 命令，这会将之前省市县数据清空，然后再执行php artisan pcm:refreshData -d jd获取最新的数据");
+//            exit;
+//        }
+        if ($this->option('driver') == 'file') {
+            $this->line("您选择从本地文件中载入省市县数据");
+            $this->line("如果您要强制从京东获取，请执行php artisan pca:refreshData -d jd");
+            //从本地文件中获取省市县数据
+            $data         = file_get_contents(__DIR__ . "/../resource/province-city-area.json");
+            $data         = json_decode($data, true);
+            $this->result = $data['list'];
+            $this->count  = $data['count'];
+            $this->line("已从本地加载数据完毕，共" . $this->count . "条");
+            $this->line("数据最后更新时间:" . $data['time']);
+        } else {
+            //从京东获取省市县数据
+            $this->provinceList = [
+                '1'     => '北京',
+                '2'     => '上海',
+                '3'     => '天津',
+                '4'     => '重庆',
+                '5'     => '河北',
+                '6'     => '山西',
+                '7'     => '河南',
+                '8'     => '辽宁',
+                '9'     => '吉林',
+                '10'    => '黑龙江',
+                '11'    => '内蒙古',
+                '12'    => '江苏',
+                '13'    => '山东',
+                '14'    => '安徽',
+                '15'    => '浙江',
+                '16'    => '福建',
+                '17'    => '湖北',
+                '18'    => '湖南',
+                '19'    => '广东',
+                '20'    => '广西',
+                '21'    => '江西',
+                '22'    => '四川',
+                '23'    => '海南',
+                '24'    => '贵州',
+                '25'    => '云南',
+                '26'    => '西藏',
+                '27'    => '陕西',
+                '28'    => '甘肃',
+                '29'    => '青海',
+                '30'    => '宁夏',
+                '31'    => '新疆',
+                '32'    => '台湾',
+                '84'    => '钓鱼岛',
+                '52993' => '港澳',
 
 //            '53283' => '海外',
-        ];
-        $this->result       = Cache::get('provinceCityAreaStreet');
-        $this->result       = json_decode($this->result, true);
-        $this->count        += count($this->provinceList);
-        if ($this->argument('disableCache') == 'true' || !is_array($this->result) || empty($this->result)) {
-            $this->result = [];
-            foreach ($this->provinceList as $id => $province) {
-                $this->result[$id] = [
-                    'id'        => $id,
-                    'name'      => $province,
-                    'parent_id' => 0,
-                    'type'      => 'province',
-                    'city_list' => [],
-                ];
-                $cityList          = $this->getCity($id);
-                $_cityList         = [];
-                if ($cityList !== false) {
-                    foreach ($cityList as $city) {
-                        $this->line("获取数据成功:" . $province . $city['name']);
-                        $_cityList[$city['id']] = [
-                            'id'        => $city['id'],
-                            'name'      => $city['name'],
-                            'parent_id' => $id,
-                            'type'      => 'city',
-                            'area_list' => [],
-                        ];
-                        $areaList               = $this->getArea($city['id']);
-                        $_areaList              = [];
-                        if ($areaList !== false) {
-                            foreach ($areaList as $area) {
-                                $this->line("获取数据成功:" . $province . $city['name'] . $area['name']);
-                                $_areaList[$area['id']] = [
-                                    'id'          => $area['id'],
-                                    'name'        => $area['name'],
-                                    'type'        => 'area',
-                                    'parent_id'   => $city['id'],
-                                    'street_list' => [],
-                                ];
-                                $streetList             = $this->getStreet($area['id']);
-                                if ($streetList !== false) {
-                                    foreach ($streetList as &$street) {
-                                        $street['type']      = 'street';
-                                        $street['parent_id'] = $area['id'];
-                                        $this->line("获取数据成功:" . $province . $city['name'] . $area['name'] . $street['name']);
-                                        unset($street['areaCode']);
-                                    }
-                                    $this->count += count($streetList);
-                                }
-                                $_areaList[$area['id']]['street_list'] = array_values($streetList);
+            ];
+            $this->count        += count($this->provinceList);
 
+            if (!is_array($this->result) || empty($this->result)) {
+                $this->result = [];
+                foreach ($this->provinceList as $id => $province) {
+                    $this->result[$id] = [
+                        'id'        => $id,
+                        'name'      => $province,
+                        'parent_id' => 0,
+                        'type'      => 'province',
+                        'city_list' => [],
+                    ];
+                    $cityList          = $this->getCity($id);
+                    $_cityList         = [];
+                    if ($cityList !== false) {
+                        foreach ($cityList as $city) {
+                            $this->line("获取数据成功:" . $province . $city['name']);
+                            $_cityList[$city['id']] = [
+                                'id'        => $city['id'],
+                                'name'      => $city['name'],
+                                'parent_id' => $id,
+                                'type'      => 'city',
+                                'area_list' => [],
+                            ];
+                            $areaList               = $this->getArea($city['id']);
+                            $_areaList              = [];
+                            if ($areaList !== false) {
+                                foreach ($areaList as $area) {
+                                    $this->line("获取数据成功:" . $province . $city['name'] . $area['name']);
+                                    $_areaList[$area['id']] = [
+                                        'id'          => $area['id'],
+                                        'name'        => $area['name'],
+                                        'type'        => 'area',
+                                        'parent_id'   => $city['id'],
+                                        'street_list' => [],
+                                    ];
+                                    $streetList             = $this->getStreet($area['id']);
+                                    if ($streetList !== false) {
+                                        foreach ($streetList as &$street) {
+                                            $street['type']      = 'street';
+                                            $street['parent_id'] = $area['id'];
+                                            $this->line("获取数据成功:" . $province . $city['name'] . $area['name'] . $street['name']);
+                                            unset($street['areaCode']);
+                                        }
+                                        $this->count += count($streetList);
+                                    }
+                                    $_areaList[$area['id']]['street_list'] = array_values($streetList);
+
+                                }
+                                $this->count                         += count($_areaList);
+                                $_cityList[$city['id']]['area_list'] = array_values($_areaList);
                             }
-                            $this->count                         += count($_areaList);
-                            $_cityList[$city['id']]['area_list'] = array_values($_areaList);
                         }
                     }
+                    $this->count                    += count($_cityList);
+                    $this->result[$id]['city_list'] = array_values($_cityList);
                 }
-                $this->count                    += count($_cityList);
-                $this->result[$id]['city_list'] = array_values($_cityList);
-
-//
+                $this->result = array_values($this->result);
+                file_put_contents(__DIR__ . "/../resource/province-city-area.json", json_encode([
+                    'list'  => $this->result,
+                    'count' => $this->count,
+                    'time'  => date('Y-m-d H:i:s'),
+                ]));
             }
-            $this->result = array_values($this->result);
-            Cache::forever('provinceCityAreaStreet', json_encode($this->result));
-            Cache::forever('provinceCityAreaStreetCount', $this->count);
-        } else {
-            $this->count = Cache::get('provinceCityAreaStreetCount');
         }
+
         $this->insertToDb();
 
 
@@ -216,7 +222,7 @@ class RefreshData extends Command
             $bar->finish();
             $this->line("");
             $this->info("数据已更新完成");
-            $this->info("共插入:" . $this->count . "条数据，其中省份:" . $countResult['province'] . ",城市:" . $countResult['city'] . ",区县:" . $countResult['area'] . ",乡镇街道:" . $countResult['street']);
+            $this->info("共插入:" . $this->count . "条数据，其中省级行政区:" . $countResult['province'] . ",城市:" . $countResult['city'] . ",区县:" . $countResult['area'] . ",乡镇街道:" . $countResult['street']);
         } catch (\Exception $e) {
             DB::rollBack();
             $this->error("更新省市县数据失败.");
