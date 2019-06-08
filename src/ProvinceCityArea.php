@@ -59,7 +59,7 @@ class ProvinceCityArea
     }
 
 
-    static public function getName($provinceId = 0, $cityId = 0, $areaId = 0)
+    static public function getName($provinceId = 0, $cityId = 0, $areaId = 0, $streetId)
     {
         $text = [];
         if (!empty($provinceId)) {
@@ -76,6 +76,12 @@ class ProvinceCityArea
             $area   = self::getItem($areaId);
             $text[] = $area->name;
         }
+
+        if (!empty($streetId)) {
+            $street = self::getItem($streetId);
+            $text[] = $street->name;
+        }
+        dump($text);
 
         return implode('', $text);
     }

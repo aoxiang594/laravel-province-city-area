@@ -12,10 +12,11 @@ use Illuminate\Console\Command;
 use Aoxiang\Pca\Models\ProvinceCityArea as PCAModel;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class RefreshData extends Command
 {
-    protected $signature = 'pca:refreshData';
+    protected $signature = 'pca:refreshData {disableCache?}';
     protected $description = '从京东获取最新的省市县数据';
     public $client = null, $provinceList = null, $url = '';
     public $result = [];
@@ -31,6 +32,12 @@ class RefreshData extends Command
 
     public function handle()
     {
+//        dump($this->arguments());
+//        $params = $this->argument('disableCache');
+//        if (isset($params)) {
+//            dump();
+//        }
+//        exit;
         if (PCAModel::count() > 0) {
             $this->error("您已经获取过最新的数据，如果再次执行，有可能会出现id有变化，导致您之前的数据不准确");
             $this->error("如果确认要执行，请运行php artisan pca:clearData 命令，这会将之前省市县数据清空，然后再执行php artisan pcm:refreshData获取最新的数据");
@@ -72,47 +79,71 @@ class RefreshData extends Command
             '32'    => '台湾',
             '84'    => '钓鱼岛',
             '52993' => '港澳',
+
 //            '53283' => '海外',
         ];
-        $this->count        += count($this->provinceList);
+        $this->result       = Cache::get('provinceCityAreaStreet');
+        $this->result       = json_decode($this->result, true);
 
-        foreach ($this->provinceList as $id => $province) {
-            $this->result[$id] = [
-                'id'        => $id,
-                'name'      => $province,
-                'city_list' => [],
-            ];
-            try {
-                $city        = $this->getCity($id);
-                $this->count += count($city);
-                $cityList    = [];
-                if ($city !== false) {
-                    foreach ($city as $item) {
-                        $this->line("获取数据成功:" . $province . $item['name']);
-                        $cityList[$item['id']] = [
-                            'id'        => $item['id'],
-                            'name'      => $item['name'],
+        if ($this->argument('disableCache') == 'true' || !is_array($this->result) || empty($this->result)) {
+            $this->result = [];
+            foreach ($this->provinceList as $id => $province) {
+                $this->result[$id] = [
+                    'id'        => $id,
+                    'name'      => $province,
+                    'parent_id' => 0,
+                    'city_list' => [],
+                ];
+                //try {
+                $cityList  = $this->getCity($id);
+                $_cityList = [];
+                if ($cityList !== false) {
+                    foreach ($cityList as $city) {
+                        $this->line("获取数据成功:" . $province . $city['name']);
+                        $_cityList[$city['id']] = [
+                            'id'        => $city['id'],
+                            'name'      => $city['name'],
+                            'parent_id' => $id,
                             'area_list' => [],
                         ];
-                        $area                  = $this->getArea($item['id']);
-                        $this->count           += count($area);
-                        if ($area !== false) {
-                            foreach ($area as &$a) {
-                                unset($a['areaCode']);
+                        $areaList               = $this->getArea($city['id']);
+                        $_areaList              = [];
+                        if ($areaList !== false) {
+                            foreach ($areaList as $area) {
+                                $this->line("获取数据成功:" . $province . $city['name'] . $area['name']);
+                                $_areaList[$area['id']] = [
+                                    'id'          => $area['id'],
+                                    'name'        => $area['name'],
+                                    'parent_id'   => $city['id'],
+                                    'street_list' => [],
+                                ];
+                                $streetList             = $this->getStreet($area['id']);
+                                if ($streetList !== false) {
+                                    foreach ($streetList as &$street) {
+                                        $street['parent_id'] = $area['id'];
+                                        $this->line("获取数据成功:" . $province . $city['name'] . $area['name'] . $street['name']);
+                                        unset($street['areaCode']);
+                                    }
+                                }
+                                $_areaList[$area['id']]['street_list'] = array_values($streetList);
                             }
-                            $cityList[$item['id']]['area_list'] = $area;
+                            $_cityList[$city['id']]['area_list'] = array_values($_areaList);
                         }
                     }
                 }
-                $this->result[$id]['city_list'] = array_values($cityList);
-            } catch (\Exception $e) {
+                $this->result[$id]['city_list'] = array_values($_cityList);
 
+//
             }
+            $this->result = array_values($this->result);
+            Cache::forever('provinceCityAreaStreet', json_encode($this->result));
+            Cache::forever('provinceCityAreaStreetCount', $this->count);
+        } else {
+            $this->count = Cache::get('provinceCityAreaStreetCount');
         }
-        $this->result = array_values($this->result);
-
-
         $this->insertToDb();
+
+
     }
 
     public function insertToDb()
@@ -121,31 +152,51 @@ class RefreshData extends Command
 
         try {
             $this->line("正在插入数据库");
-            $bar = $this->output->createProgressBar($this->count);
-            foreach ($this->result as $item) {
-                $province = PCAModel::create($item);
-                $bar->advance();
-                if (!empty($item['city_list'])) {
-                    foreach ($item['city_list'] as $value) {
-                        $value['parent_id'] = $province->id;
-                        $city               = PCAModel::create($value);
-                        $bar->advance();
-                        if (!empty($value['area_list'])) {
-                            foreach ($value['area_list'] as $v) {
-                                $v['parent_id'] = $city->id;
-                                $area           = PCAModel::create($v);
-                                $bar->advance();
-                            }
+            $bar = $this->output->createProgressBar(count($this->result));
+            foreach ($this->result as $province) {
+                $provinceList[] = [
+                    'id'        => $province['id'],
+                    'name'      => $province['name'],
+                    'parent_id' => $province['parent_id'],
+                ];
+                $cityList       = [];
+                foreach ($province['city_list'] as $city) {
+                    $cityList[] = [
+                        'id'        => $city['id'],
+                        'name'      => $city['name'],
+                        'parent_id' => $city['parent_id'],
+                    ];
+                    $areaList = [];
+                    foreach ($city['area_list'] as $area) {
+                        $areaList[]   = [
+                            'id'        => $area['id'],
+                            'name'      => $area['name'],
+                            'parent_id' => $area['parent_id'],
+                        ];
+                        $streetList = [];
+                        foreach ($area['street_list'] as $street) {
+                            $streetList[] = [
+                                'id'        => $street['id'],
+                                'name'      => $street['name'],
+                                'parent_id' => $street['parent_id'],
+                            ];
                         }
+                        DB::table('province_city_area')->insert($streetList);
                     }
+                    DB::table('province_city_area')->insert($areaList);
                 }
+
+                DB::table('province_city_area')->insert($cityList);
+                $bar->advance();
             }
+            DB::table('province_city_area')->insert($provinceList);
             $bar->finish();
             $this->info("数据已更新完成");
         } catch (\Exception $e) {
             DB::rollBack();
             $this->error("更新省市县数据失败.");
             $this->error($e->getMessage());
+            $this->error($e->getLine());
         }
 
         DB::commit();
@@ -157,6 +208,11 @@ class RefreshData extends Command
     }
 
     public function getArea($id)
+    {
+        return $this->parseData($id);
+    }
+
+    public function getStreet($id)
     {
         return $this->parseData($id);
     }

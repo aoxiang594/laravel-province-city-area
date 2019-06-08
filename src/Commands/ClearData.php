@@ -20,6 +20,8 @@ class ClearData extends Command
 
     public function handle()
     {
+        $this->line("开始清空数据");
         PCAModel::query()->truncate();
+        $this->info("数据已清空");
     }
 }
