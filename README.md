@@ -9,8 +9,13 @@
 
 > 内部自带京东「省市县乡镇街道」数据爬虫，用户可以自行运行爬取最新的「省市县乡镇街道」数据
 
+#### 项目地址
+https://github.com/aoxiang594/laravel-province-city-area
 
- 
+#### Composer 安装
+```
+composer require aoxiang/province-city-area
+```
  
 
 #### 添加provider（laravel 版本 < 5.5）
