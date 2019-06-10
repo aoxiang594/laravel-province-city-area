@@ -39,7 +39,7 @@ php artisan pca:refreshData
 
 #### 其他
 
-pca:refreshData -d:file|jd
+`php artisan pca:refreshData -d:file|jd` 
 更新数据有一个参数 driver
 
 | 参数值 | 说明 |
