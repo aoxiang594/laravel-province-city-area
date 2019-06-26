@@ -177,6 +177,7 @@ class RefreshData extends Command
                     'id'        => $province['id'],
                     'name'      => $province['name'],
                     'parent_id' => $province['parent_id'],
+                    'type'      => 'province',
                 ];
                 $cityList       = [];
 
@@ -186,6 +187,7 @@ class RefreshData extends Command
                         'id'        => $city['id'],
                         'name'      => $city['name'],
                         'parent_id' => $city['parent_id'],
+                        'type'      => 'city',
                     ];
                     $areaList   = [];
                     foreach ($city['area_list'] as $area) {
@@ -193,6 +195,7 @@ class RefreshData extends Command
                             'id'        => $area['id'],
                             'name'      => $area['name'],
                             'parent_id' => $area['parent_id'],
+                            'type'      => 'area',
                         ];
                         $streetList = [];
 //                        dump($area['street_list']);
@@ -201,6 +204,7 @@ class RefreshData extends Command
                                 'id'        => $street['id'],
                                 'name'      => $street['name'],
                                 'parent_id' => $street['parent_id'],
+                                'type'      => 'street',
                             ];
                         }
                         DB::table('province_city_area')->insert($streetList);

@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 class ProvinceCityArea extends Model
 {
     public $table = 'province_city_area';
-    public $fillable = ['id', 'name', 'parent_id'];
+    public $fillable = ['id', 'name', 'parent_id', 'type'];
 
     public function __construct(array $attributes = [])
     {

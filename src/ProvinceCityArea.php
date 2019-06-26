@@ -47,6 +47,25 @@ class ProvinceCityArea
         return self::getItem($areaId);
     }
 
+    static public function getAllProvince()
+    {
+        return self::getListByType();
+    }
+
+    static public function getAllCity()
+    {
+        return self::getListByType('city');
+    }
+
+    static public function getAllArea()
+    {
+        return self::getListByType('area');
+    }
+
+    static public function getAllStreet()
+    {
+        return self::getListByType('street');
+    }
 
     static protected function getListByParentId($parentId)
     {
@@ -56,6 +75,11 @@ class ProvinceCityArea
     static protected function getItem($id)
     {
         return PCA::where('id', $id)->first();
+    }
+
+    static protected function getListByType($type = 'province')
+    {
+        return PCA::where('type', $type)->get();
     }
 
 
