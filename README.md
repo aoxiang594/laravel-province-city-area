@@ -135,7 +135,26 @@ class Controller  extends BaseController{
         }
         return response()->json(ProvinceCityArea::getAreaList($cityId));
     }
-
+    
+    
+    public function getAllProvince()
+    {
+        return response()->json(ProvinceCityArea::getAllProvince());
+    }
+    
+    public function getAllCity()
+    {
+        return response()->json(ProvinceCityArea::getAllCity());
+    }
+    public function getAllArea()
+    {
+        return response()->json(ProvinceCityArea::getAllArea());
+    }
+    public function getAllStreet()
+    {
+        return response()->json(ProvinceCityArea::getAllStreet());
+    }
+    
 
     public function test()
     {
