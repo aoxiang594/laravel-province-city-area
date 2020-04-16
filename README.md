@@ -1,5 +1,7 @@
 # Laravel-Province-City-Area   「全国省市县乡镇街道」数据(数据来源于京东，内置爬虫，可自行获取最新数据)
 
+![StyleCI build status](https://github.styleci.io/repos/190225659/shield) 
+
 这是一个提供「全国省市县乡镇街道」数据的轮子
 
 试过了很多数据来源(国家统计局、网上其他开发者提供的json等),发现还是会有小部分省市有遗漏。
