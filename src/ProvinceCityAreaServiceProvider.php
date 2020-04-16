@@ -3,7 +3,6 @@
 namespace Aoxiang\Pca;
 
 use Illuminate\Support\ServiceProvider;
-use Psy\Command\Command;
 
 class ProvinceCityAreaServiceProvider extends ServiceProvider
 {
@@ -17,7 +16,6 @@ class ProvinceCityAreaServiceProvider extends ServiceProvider
         $this->app->singleton('provincecityarea', function () {
             return $this->app->make('Aoxiang\Pca\ProvinceCityArea');
         });
-
     }
 
     /**
@@ -36,7 +34,7 @@ class ProvinceCityAreaServiceProvider extends ServiceProvider
 //            __DIR__ . '/database/migrations/2019_06_04_222005_create_province_city_area_table.php' => database_path('migrations/2019_06_04_222005_create_province_city_area_table.php'),
 //        ], 'migrations');
 
-        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/database/migrations');
 
         //生成命令
         if ($this->app->runningInConsole()) {

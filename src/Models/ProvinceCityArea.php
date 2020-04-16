@@ -3,11 +3,10 @@
  * Created by PhpStorm.
  * User: aoxiang
  * Date: 2019-06-04
- * Time: 22:34
+ * Time: 22:34.
  */
 
 namespace Aoxiang\Pca\Models;
-
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,6 +19,4 @@ class ProvinceCityArea extends Model
     {
         parent::__construct($attributes);
     }
-
-
 }
