@@ -281,7 +281,8 @@ class RefreshData extends Command
     {
         $data = preg_replace('/^getAreaList_callback(\w)\(/', '', $data);
         $data = preg_replace('/\)$/', '', $data);
-
+        $data = preg_replace('/[(\xc2\xa0)|\s]+/','', $data);
+        
         $data = json_decode($data, true);
         if (is_array($data)) {
             return $data;
