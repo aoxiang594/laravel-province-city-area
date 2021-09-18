@@ -23,11 +23,6 @@ composer require aoxiang/province-city-area
 #### 添加provider（laravel 版本 < 5.5）
 将`Aoxiang\Pca\ProvinceCityAreaServiceProvider::class`复制到`config.php`内`providers`数组内
 
-#### 生成数据库迁移文件：
-
-```
-php artisan vendor:publish --provider="Aoxiang\Pca\ProvinceCityAreaServiceProvider" --tag="migrations"
-```
 
 #### 执行数据库迁移
 ```
