@@ -8,6 +8,8 @@
 
 这个包的数据是**来自于京东**，相对来说会更准确、详尽一些。
 
+> 增加地址解析，粘贴一段收件地址，自动识别收件人、电话、省市县、地址
+
 
 > 内部自带京东「省市县乡镇街道」数据爬虫，用户可以自行运行爬取最新的「省市县乡镇街道」数据
 
@@ -18,7 +20,6 @@ https://github.com/aoxiang594/laravel-province-city-area
 ```
 composer require aoxiang/province-city-area
 ```
- 
 
 #### 添加provider（laravel 版本 < 5.5）
 将`Aoxiang\Pca\ProvinceCityAreaServiceProvider::class`复制到`config.php`内`providers`数组内
@@ -157,6 +158,12 @@ class Controller  extends BaseController{
     {
         echo ProvinceCityArea::getName(21, 1827, 40847, 53114);
         //echo "江西南昌市西湖区系马桩街道";
+    }
+
+    public function parseAddress()
+    {
+        $address = '江西省南昌市红谷滩双子塔A2-1888 敖翔 13866668888';
+        ProvinceCityArea::parseAddress($address);
     }
 }
 
