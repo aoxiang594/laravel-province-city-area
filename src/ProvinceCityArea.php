@@ -215,7 +215,17 @@ class ProvinceCityArea
     {
 
         //省市区县
-        $result = [];
+        $result = [
+            'province_id'=>'',
+            'province'=>'',
+            'city_id'=>'',
+            'city'=>'',
+            'area_id'=>'',
+            'area'=>'',
+            'name'=>'',
+            'mobile'=>'',
+            'address'=>'',
+        ];
         //1. 过滤掉收货地址中的常用说明字符，排除干扰词
         $data = preg_replace(
             "/收货地址|地址|收货人|收件人|收货|邮编|电话|联系电话|姓名|身份证号码|身份证号|身份证|详细地址|手机号码|所在地区|：|:|；|;|，|,|。|\.|“|”|\"/",
@@ -233,7 +243,6 @@ class ProvinceCityArea
             '',
             $data
         );
-        dump($data);
         //解析手机号
         $data     = (string) preg_replace('/(\\d{3})-(\\d{4})-(\\d{4})/u', '$1$2$3', $data);
         $data     = (string) preg_replace('/(\\d{3}) (\\d{4}) (\\d{4})/u', '$1$2$3', $data);
