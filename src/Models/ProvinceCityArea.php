@@ -16,9 +16,9 @@ class ProvinceCityArea extends Model
     public $fillable = ['id', 'name', 'parent_id', 'type'];
 
     const TYPE_PROVINCE = 'province';
-    const TYPE_CITY     = 'city';
-    const TYPE_AREA     = 'area';
-    const TYPE_STREET   = 'street';
+    const TYPE_CITY = 'city';
+    const TYPE_AREA = 'area';
+    const TYPE_STREET = 'street';
 
     public function __construct(array $attributes = [])
     {
@@ -44,6 +44,4 @@ class ProvinceCityArea extends Model
     {
         return $this->type === self::TYPE_STREET;
     }
-
-
 }
