@@ -334,7 +334,7 @@ class ProvinceCityArea
             }
         }
 
-        if (empty($result['city'])) {
+        if (empty($result['city']) && isset($areaList[$key])) {
             //阿克苏地区，实际填写 阿克苏这样的简写
             $city = PCA::where('id', $areaList[$key]->parent_id)->first();
             if (! empty($city)) {
